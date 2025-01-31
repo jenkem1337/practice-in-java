@@ -27,12 +27,16 @@ public class EventEmitter {
     public <T> void saveEvent(String key, Consumer<T> callback) {
         callbackHashMap.computeIfAbsent(key, k -> new ArrayList<>()).add((Consumer<Object>)callback);
     }
-    public void emit(String key, Object callbackCommand) {
+    public CompletableFuture<Boolean> emit(String key, Object callbackCommand) {
         if(!callbackHashMap.containsKey(key)) throw new RuntimeException("Callback key does not exist : " + key);
-
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
         callbackHashMap.get(key).forEach(consumer -> {
-            dispatchQueue.offer(() -> consumer.accept(callbackCommand));
+            dispatchQueue.offer(() -> {
+                consumer.accept(callbackCommand);
+                future.complete(true);
+            });
         });
+        return future;
     }
     public int eventSize(){
         return callbackHashMap.size();
