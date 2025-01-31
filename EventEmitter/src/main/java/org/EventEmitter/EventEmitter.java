@@ -1,6 +1,7 @@
 package org.EventEmitter;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -10,36 +11,27 @@ public class EventEmitter {
     private static class SingletonHolder {
         private static final EventEmitter INSTANCE = new EventEmitter();
     }
+    private  final ConcurrentLinkedQueue<Runnable> dispatchQueue;
+    private  final Map<String, List<Consumer<Object>>> callbackHashMap;
+    private  final ExecutorService executorService;
+    private  volatile boolean  isRunning;
 
-    private final Map<String, List<Consumer<Object>>> callbackHashMap =  new ConcurrentHashMap<>();
-    private  ExecutorService executorService;
     private EventEmitter() {
-        executorService = Executors.newVirtualThreadPerTaskExecutor();
-    }
-
-
-    public void setExecutorService(ExecutorService executorService) {
-        this.executorService = executorService;
+        executorService = Executors.newSingleThreadExecutor();
+        callbackHashMap =  new ConcurrentHashMap<>();
+        dispatchQueue = new ConcurrentLinkedQueue<>();
+        isRunning = true;
+        executorService.submit(this::processDispatchQueue);
     }
 
     public <T> void saveEvent(String key, Consumer<T> callback) {
-        if (callbackHashMap.containsKey(key)) {
-            List<Consumer<Object>> callbacks = callbackHashMap.get(key);
-
-            callbacks.add((Consumer<Object>) callback);
-            callbackHashMap.put(key, callbacks);
-            return;
-        }
-
-        List<Consumer<Object>> recordList = new CopyOnWriteArrayList<>();
-        recordList.add((Consumer<Object>) callback);
-        callbackHashMap.put(key, recordList);
+        callbackHashMap.computeIfAbsent(key, k -> new ArrayList<>()).add((Consumer<Object>)callback);
     }
     public void emit(String key, Object callbackCommand) {
         if(!callbackHashMap.containsKey(key)) throw new RuntimeException("Callback key does not exist : " + key);
 
         callbackHashMap.get(key).forEach(consumer -> {
-            executorService.submit(() -> consumer.accept(callbackCommand));
+            dispatchQueue.offer(() -> consumer.accept(callbackCommand));
         });
     }
     public int eventSize(){
@@ -49,7 +41,19 @@ public class EventEmitter {
         return SingletonHolder.INSTANCE;
     }
 
+    private void processDispatchQueue() {
+        while (isRunning) {
+            Runnable eventTask = dispatchQueue.poll();
+            if (eventTask != null) {
+                eventTask.run();
+            }
+        }
+
+    }
+
     public void shutdownEventEmitter() {
+        isRunning = false;
+
         executorService.shutdown();
         try {
             if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
