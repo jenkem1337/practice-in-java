@@ -1,0 +1,9 @@
+BEGIN,1
+BEGIN,2
+WRITE,2,INSERT,Merhaba,Dunya,null
+COMMIT,2
+START CKPT 1
+WRITE,1,INSERT,Hello,World,null
+END CKPT
+WRITE,1,DELETE,Hello,null,World
+ABORT,1
