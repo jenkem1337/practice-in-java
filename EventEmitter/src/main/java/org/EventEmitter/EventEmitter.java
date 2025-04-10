@@ -11,7 +11,7 @@ public class EventEmitter {
     private static class SingletonHolder {
         private static final EventEmitter INSTANCE = new EventEmitter();
     }
-    private  final ConcurrentLinkedQueue<Runnable> dispatchQueue;
+    private  final BlockingQueue<Runnable> dispatchQueue;
     private  final Map<String, List<Consumer<Object>>> callbackHashMap;
     private  final ExecutorService executorService;
     private  volatile boolean  isRunning;
@@ -19,9 +19,15 @@ public class EventEmitter {
     private EventEmitter() {
         executorService = Executors.newSingleThreadExecutor();
         callbackHashMap =  new ConcurrentHashMap<>();
-        dispatchQueue = new ConcurrentLinkedQueue<>();
+        dispatchQueue = new LinkedBlockingQueue<>();
         isRunning = true;
-        executorService.submit(this::processDispatchQueue);
+        executorService.submit(() -> {
+            try {
+                processDispatchQueue();
+            } catch(InterruptedException ex) {
+                System.out.println(ex.getMessage());
+            }
+        });
     }
 
     public <T> void saveEvent(String key, Consumer<T> callback) {
@@ -45,12 +51,10 @@ public class EventEmitter {
         return SingletonHolder.INSTANCE;
     }
 
-    private void processDispatchQueue() {
+    private void processDispatchQueue() throws InterruptedException {
         while (isRunning) {
-            Runnable eventTask = dispatchQueue.poll();
-            if (eventTask != null) {
-                eventTask.run();
-            }
+            Runnable eventTask = dispatchQueue.take();
+            eventTask.run();
         }
 
     }
@@ -60,7 +64,7 @@ public class EventEmitter {
 
         executorService.shutdown();
         try {
-            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+            if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
                 executorService.shutdownNow();
             }
         } catch (InterruptedException e) {
