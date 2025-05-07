@@ -1,0 +1,14 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="logBean" class="org.ApplicationContext.Log"/>
+    <bean id="sinBean" class="org.ApplicationContext.Sin"/>
+    <bean id="cosBean" class="org.ApplicationContext.Cos"/>
+    <bean id="calculatorBean" class="org.ApplicationContext.Calculator">
+        <property name="functions">
+            <map>
+                <entry key="sin" value-ref="sinBean"/>
+                <entry key="cos" value-ref="cosBean"/>
+                <entry key="log" value-ref="logBean"/>
+            </map>
+        </property>
+    </bean>
+</beans>
