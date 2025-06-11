@@ -9,40 +9,61 @@ import java.util.function.Consumer;
 
 public class TCPSocketClient {
     private final Socket clientSocket;
-    private PrintWriter output;
-    private BufferedReader input;
+    private final PrintWriter output;
+    private final BufferedReader input;
+    private final String address;
+    private final int port;
+    private Thread eventListenerThread;
+    private Socket eventListenerSocket;
+    private PrintWriter eventListenerOutput;
+    private BufferedReader eventListenerInput;
 
     public TCPSocketClient(String address, int port) throws IOException {
+        this.address = address;
+        this.port = port;
         clientSocket = new Socket(address, port);
         output = new PrintWriter(clientSocket.getOutputStream(), true);
         input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
     }
-    public void watchDelete() throws IOException {
-        Socket _clientSocket = new Socket("localhost", 9090);
-        PrintWriter _output = new PrintWriter(_clientSocket.getOutputStream(), true);
-        BufferedReader _input = new BufferedReader(new InputStreamReader(_clientSocket.getInputStream()));
+    public void watch(String key) throws IOException {
 
-        Thread listenerThread = new Thread(() -> {
-            _output.println("WATCH_REMOVE");
+        eventListenerThread = new Thread(() -> {
+            try {
+                eventListenerSocket = new Socket(address, port);
+                eventListenerOutput = new PrintWriter(eventListenerSocket.getOutputStream(), true);
+                eventListenerInput = new BufferedReader(new InputStreamReader(eventListenerSocket.getInputStream()));
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            eventListenerOutput.println("WATCH "+ key);
             String line;
             try {
-                while ((line = _input.readLine()) != null) {
+                while ((line = eventListenerInput.readLine()) != null) {
                     System.out.println("EVENT: " + line);
                 }
             } catch (IOException e) {
                 System.out.println("Connection closed or error while watching: " + e.getMessage());
             }
         });
-        listenerThread.setDaemon(true);
-        listenerThread.start();
+        eventListenerThread.start();
     }
     public String sendMessage(String message) throws IOException {
         output.println(message);
         return input.readLine();
     }
     public void closeConnection() throws IOException {
+        output.println("EXIT");
         clientSocket.close();
+        input.close();
+        output.close();
     }
-
+    public void closeEventListenerConnection() throws IOException {
+        eventListenerOutput.println("EXIT");
+        eventListenerSocket.close();
+        eventListenerInput.close();
+        eventListenerOutput.close();
+        eventListenerThread.interrupt();
+    }
 }
