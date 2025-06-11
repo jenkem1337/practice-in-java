@@ -17,7 +17,7 @@ public class TCPSocketServer {
         //map = new ConcurrentHashMap<>();
         pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         serverSocket = new ServerSocket(this.port);
-        cache = new ObservableCache(new ConcurrentSkipListMap<>());
+        cache = new ObservableCache(new ConcurrentSkipListMap<>(), new ConcurrentHashMap<>());
 
     }
 
