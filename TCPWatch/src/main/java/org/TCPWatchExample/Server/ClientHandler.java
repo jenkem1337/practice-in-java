@@ -33,25 +33,21 @@ public class ClientHandler implements Runnable {
                 if ("PING".equals(commands[0])) {
                     output.println("PONG");
                 }
-                else if ("WATCH_REMOVE".equals(commands[0])) {
-                    cache.addObserver(new ClientSession(clientSocket, output));
-                    output.println("Client watching cache remove");
+                else if ("WATCH".equals(commands[0])) {
+                    cache.addObserver(commands[1], new ClientSession(clientSocket, output));
+                    output.println("Client watching " + commands[1] + " key");
                 }
                 else if ("REMOVE".equals(commands[0])) {
-                    Integer key = Integer.parseInt(commands[1]);
-                    cache.remove(key);
-
+                    cache.remove(commands[1]);
+                    output.println();
                 }
                 else if ("GET".equals(commands[0])) {
-                    Integer key = Integer.parseInt(commands[1]);
-                    var response = cache.get(key);
+                    var response = cache.get(commands[1]);
                     output.println("GET VALUE -> " + response);
 
                 }
                 else if ("PUT".equals(commands[0])) {
-                    Integer key = Integer.parseInt(commands[1]);
-                    String val = commands[2];
-                    var response =cache.put(key, val);
+                    var response =cache.put(commands[1], commands[2]);
                     output.println("PUT VALUE -> " + response);
 
                 }
