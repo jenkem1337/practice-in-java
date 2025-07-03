@@ -13,6 +13,6 @@ public class Main {
         System.out.println(calculator.doCalculation("sin", 2*Math.PI*30/360));
         System.out.println(calculator.doCalculation("cos", 2*Math.PI*30/360));
         System.out.println(calculator.doCalculation("log", 2.71828));
-
+        System.out.println("Merhaba");
     }
 }
