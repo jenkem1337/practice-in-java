@@ -1,0 +1,5 @@
+org\LeaderElection\Job.class
+org\LeaderElection\HelloWorldJob.class
+org\LeaderElection\LeaderElectionManager.class
+org\LeaderElection\LeaderElectionManager$1.class
+org\LeaderElection\Main.class
