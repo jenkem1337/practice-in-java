@@ -18,9 +18,8 @@ public class SPSCArrayQueue<E> implements RingBuffer<E>{
 
     @Override
     public boolean offer(E element) {
-        if (isFull()) {
-
-            return false;
+        while (isFull()) {
+            Thread.onSpinWait();
         }
         buffer[writeIndex] = element;
         writeIndex = (writeIndex + 1) % capacity;
@@ -29,7 +28,7 @@ public class SPSCArrayQueue<E> implements RingBuffer<E>{
 
     @Override
     public E poll() {
-        if (isEmpty()) {
+        while(isEmpty()) {
             Thread.onSpinWait();
         }
         E element = buffer[readIndex];
