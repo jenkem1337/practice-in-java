@@ -30,9 +30,8 @@ public class SPSCArrayQueue<E> implements RingBuffer<E>{
     @Override
     public E poll() {
         if (isEmpty()) {
-            return null;
+            Thread.onSpinWait();
         }
-
         E element = buffer[readIndex];
         readIndex = (readIndex + 1) % capacity;
         return element;
