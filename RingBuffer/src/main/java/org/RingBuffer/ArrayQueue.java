@@ -35,6 +35,7 @@ public class ArrayQueue<E> implements RingBuffer<E>{
         }
 
         E element = buffer[readIndex];
+        buffer[readIndex] = null;
         readIndex = (readIndex + 1) % capacity;
         return element;
 

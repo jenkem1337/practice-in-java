@@ -52,6 +52,7 @@ public class SPMCArrayQueue<E> implements BlockingRingBuffer<E>{
             //int currentReadIndex = readIndex.getAndUpdate(i -> (i + 1) % capacity);
             //E element = buffer[currentReadIndex];
             E element = buffer[readIndex];
+            buffer[readIndex] = null;
             readIndex = (readIndex + 1) % capacity;
             return element;
         }
