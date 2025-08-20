@@ -82,11 +82,23 @@ public class SPMCArrayQueue<E> implements BlockingRingBuffer<E>{
 
     @Override
     public RingBufferState state() {
-        return null;
+        return new RingBufferState(writeIndex, readIndex, capacity, isFull(), isEmpty());
     }
 
     @Override
     public Iterator<E> iterator() {
-        return null;
+        return new SPMCArrayQueueIterator();
+    }
+    private final class SPMCArrayQueueIterator implements Iterator<E> {
+        private int cursor = 0;
+        @Override
+        public boolean hasNext() {
+            return cursor < capacity ;
+        }
+
+        @Override
+        public E next() {
+            return buffer[cursor++];
+        }
     }
 }
