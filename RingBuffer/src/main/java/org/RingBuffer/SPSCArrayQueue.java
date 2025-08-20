@@ -2,7 +2,7 @@ package org.RingBuffer;
 
 import java.util.Iterator;
 
-public class SPSCArrayQueue<E> implements RingBuffer<E>{
+public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
     private final E[] buffer;
     private volatile int writeIndex;
     private volatile int readIndex;
@@ -18,23 +18,12 @@ public class SPSCArrayQueue<E> implements RingBuffer<E>{
 
     @Override
     public boolean offer(E element) {
-        while (isFull()) {
-            Thread.onSpinWait();
-        }
-        buffer[writeIndex] = element;
-        writeIndex = (writeIndex + 1) % capacity;
-        return true;
+        return false;
     }
 
     @Override
     public E poll() {
-        while(isEmpty()) {
-            Thread.onSpinWait();
-        }
-        E element = buffer[readIndex];
-        readIndex = (readIndex + 1) % capacity;
-        return element;
-
+        return null;
     }
 
     @Override
@@ -57,6 +46,28 @@ public class SPSCArrayQueue<E> implements RingBuffer<E>{
     public Iterator<E> iterator() {
         return new SPSCArrayQueueIterator();
     }
+
+    @Override
+    public boolean put(E element) {
+        while (isFull()) {
+            Thread.onSpinWait();
+        }
+        buffer[writeIndex] = element;
+        writeIndex = (writeIndex + 1) % capacity;
+        return true;
+    }
+
+    @Override
+    public E take() {
+        while(isEmpty()) {
+            Thread.onSpinWait();
+        }
+        E element = buffer[readIndex];
+        readIndex = (readIndex + 1) % capacity;
+        return element;
+
+    }
+
     private final class SPSCArrayQueueIterator implements Iterator<E> {
         private int cursor = 0;
         @Override
