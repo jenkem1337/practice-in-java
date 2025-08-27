@@ -10,7 +10,8 @@ import java.util.Properties;
 
 public class HikariDataSourceProvider {
     private final HikariDataSource dataSource;
-
+    public final static int MIN_POOL_SIZE = 2;
+    public final static int MAX_POOL_SIZE = 10;
     private HikariDataSourceProvider() {
         final var props = new Properties();
         props.setProperty("dataSourceClassName", "org.postgresql.ds.PGSimpleDataSource");
@@ -24,8 +25,8 @@ public class HikariDataSourceProvider {
         dataSource = new HikariDataSource(
                 new HikariConfig(props)
         );
-        dataSource.setMaximumPoolSize(2);
-        dataSource.setMaximumPoolSize(10);
+        dataSource.setMaximumPoolSize(MIN_POOL_SIZE);
+        dataSource.setMaximumPoolSize(MAX_POOL_SIZE);
         dataSource.setIdleTimeout(1000 * 30);
         dataSource.setConnectionTimeout(1000);
         dataSource.setLeakDetectionThreshold(1000);
