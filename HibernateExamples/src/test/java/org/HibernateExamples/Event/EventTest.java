@@ -77,7 +77,6 @@ class EventTest {
     }
 
     @Test
-    @Rollback
     void findNotExistEvent() {
         Event eventFromDb = (session.find(Event.class, 2L));
         assertThat(eventFromDb).isNull();
