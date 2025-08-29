@@ -212,10 +212,10 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
         final int testRounds = 50_000_000;
 
 //         Warmup phase to eliminate JIT compilation effects
-//        System.out.println("Warming up...");
-//        for (int w = 0; w < 10; w++) {
-//            runLatencyRound(queue, warmupRounds);
-//        }
+        System.out.println("Warming up...");
+        for (int w = 0; w < 10; w++) {
+            runLatencyRound(queue, warmupRounds);
+        }
 
         System.out.println("Running latency test...");
         long[] latencies = runLatencyRound(queue, testRounds);
@@ -288,8 +288,8 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
         return latencies;
     }
     public static void main(String[] args) throws InterruptedException {
-        throughput();
+//        throughput();
 
-//        latencyTest();
+        latencyTest();
     }
 }
