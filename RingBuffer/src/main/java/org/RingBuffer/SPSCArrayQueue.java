@@ -86,21 +86,16 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
 //        }
 //        buffer[(int) writeIndex & mask] = element;
 //        writeIndex = (writeIndex + 1) & mask;
-        // local cache of readSeq to avoid volatile reads every iteration
         long rCache = (long) READ_VH.getAcquire(this);
         while (true) {
-            long w = (long) WRITE_VH.getOpaque(this); // cheap read of write sequence
+            long w = (long) WRITE_VH.getOpaque(this);
             if (w - rCache < capacity) {
                 int idx = (int) (w & mask);
-                // publish element with release semantics
                 ARRAY_VH.setRelease(buffer, idx, element);
-                // then advance write sequence with release
                 WRITE_VH.setRelease(this, w + 1);
                 return;
             }
-            // buffer full: refresh remote and backoff
-            rCache = (long) READ_VH.getAcquire(this); // refresh remote readSeq
-            // light spin then park if still full
+            rCache = (long) READ_VH.getAcquire(this);
             Thread.onSpinWait();
             LockSupport.parkNanos(1L);
         }
@@ -121,18 +116,14 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
             long r = (long) READ_VH.getOpaque(this);
             if (wCache > r) {
                 int idx = (int) (r & mask);
-                // read element with acquire semantics
+
                 E e = (E) ARRAY_VH.getAcquire(buffer, idx);
-                // help GC: clear slot (optional)
 //                ARRAY_VH.setRelease(buffer, idx, null);
-                // advance read seq
                 READ_VH.setRelease(this, r + 1);
                 return e;
             }
-            // empty -> refresh and backoff
             wCache = (long) WRITE_VH.getAcquire(this);
             Thread.onSpinWait();
-//            LockSupport.parkNanos(1L);
         }
 
     }
@@ -154,7 +145,7 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
     private static void throughput() throws InterruptedException {
         var buffer = new SPSCArrayQueue<Integer>((int)Math.pow(2,16));
         var latch = new CountDownLatch(2);
-        final var total = 500_000_000; // Increased for better measurement
+        final var total = 500_000_000;
         long[] producerTime = new long[1];
         long[] consumerTime = new long[1];
 
@@ -211,7 +202,7 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
         final int warmupRounds = 100_000;
         final int testRounds = 50_000_000;
 
-//         Warmup phase to eliminate JIT compilation effects
+        //JIT Warming
         System.out.println("Warming up...");
         for (int w = 0; w < 10; w++) {
             runLatencyRound(queue, warmupRounds);
@@ -220,7 +211,6 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
         System.out.println("Running latency test...");
         long[] latencies = runLatencyRound(queue, testRounds);
 
-        // Calculate statistics
         Arrays.sort(latencies);
         long min = latencies[0];
         long max = latencies[latencies.length - 1];
@@ -246,7 +236,6 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
 
         Thread producer = new Thread(() -> {
             try {
-                // Pin to CPU core for better performance
                 Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
                 long next = System.nanoTime();
@@ -254,10 +243,9 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
                     long timestamp = System.nanoTime();
                     queue.put(timestamp);
 
-                    // 1 µs pacing
-                    next += 1000; // nanoseconds
+                    next += 1000;
                     while ((System.nanoTime()) < next) {
-                        Thread.onSpinWait(); // aktif bekleme
+                        Thread.onSpinWait();
                     }
                 }
 
@@ -268,7 +256,6 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
 
         Thread consumer = new Thread(() -> {
             try {
-                // Pin to CPU core for better performance
                 Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
                 for (int i = 0; i < rounds; i++) {
