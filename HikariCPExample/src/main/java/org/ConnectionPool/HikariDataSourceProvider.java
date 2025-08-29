@@ -10,8 +10,8 @@ import java.util.Properties;
 
 public class HikariDataSourceProvider {
     private final HikariDataSource dataSource;
-    public final static int MIN_POOL_SIZE = 2;
-    public final static int MAX_POOL_SIZE = 10;
+    public final static int MIN_POOL_SIZE = Runtime.getRuntime().availableProcessors() / 2;
+    public final static int MAX_POOL_SIZE = Runtime.getRuntime().availableProcessors();
     private HikariDataSourceProvider() {
         final var props = new Properties();
         props.setProperty("dataSourceClassName", "org.postgresql.ds.PGSimpleDataSource");
