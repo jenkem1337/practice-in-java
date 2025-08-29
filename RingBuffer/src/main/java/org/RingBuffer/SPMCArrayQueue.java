@@ -23,7 +23,7 @@ public class SPMCArrayQueue<E> implements BlockingRingBuffer<E>{
     }
 
     @Override
-    public boolean put(E element) {
+    public void put(E element) {
         while(isFull()) {
             Thread.onSpinWait();
         }
@@ -32,7 +32,6 @@ public class SPMCArrayQueue<E> implements BlockingRingBuffer<E>{
         synchronized (isNotEmpty) {
             isNotEmpty.notifyAll();
         }
-        return true;
 
     }
 

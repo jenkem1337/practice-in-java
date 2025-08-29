@@ -23,7 +23,7 @@ public class MPSCArrayQueue<E> implements BlockingRingBuffer<E>{
     }
 
     @Override
-    public boolean put(E element) {
+    public void put(E element) {
         synchronized (writeLock){
             while(isFull() && !closed) {
                 synchronized (notFull) {
@@ -31,13 +31,12 @@ public class MPSCArrayQueue<E> implements BlockingRingBuffer<E>{
                         notFull.wait();
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                        return false;
+                        break;
                     }
                 }
             }
             buffer[writeIndex] = element;
             writeIndex = (writeIndex + 1) % capacity;
-            return true;
         }
     }
 
