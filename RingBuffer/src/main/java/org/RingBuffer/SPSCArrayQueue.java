@@ -102,7 +102,7 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
             rCache = (long) READ_VH.getAcquire(this); // refresh remote readSeq
             // light spin then park if still full
             Thread.onSpinWait();
-//            LockSupport.parkNanos(1L);
+            LockSupport.parkNanos(1L);
         }
 
     }
@@ -124,7 +124,7 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
                 // read element with acquire semantics
                 E e = (E) ARRAY_VH.getAcquire(buffer, idx);
                 // help GC: clear slot (optional)
-                ARRAY_VH.setRelease(buffer, idx, null);
+//                ARRAY_VH.setRelease(buffer, idx, null);
                 // advance read seq
                 READ_VH.setRelease(this, r + 1);
                 return e;
@@ -152,7 +152,7 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
     }
 
     private static void throughput() throws InterruptedException {
-        var buffer = new SPSCArrayQueue<Integer>((int) Math.pow(2, 16));
+        var buffer = new SPSCArrayQueue<Integer>((int)Math.pow(2,16));
         var latch = new CountDownLatch(2);
         final var total = 500_000_000; // Increased for better measurement
         long[] producerTime = new long[1];
@@ -207,15 +207,15 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
     }
 
     private static void latencyTest() throws InterruptedException {
-        var queue = new SPSCArrayQueue<Long>(1024);
-        final int warmupRounds = 100;
-        final int testRounds = 100_000;
+        var queue = new SPSCArrayQueue<Long>((int) Math.pow(2, 16));
+        final int warmupRounds = 100_000;
+        final int testRounds = 50_000_000;
 
 //         Warmup phase to eliminate JIT compilation effects
-        System.out.println("Warming up...");
-        for (int w = 0; w < 10; w++) {
-            runLatencyRound(queue, warmupRounds);
-        }
+//        System.out.println("Warming up...");
+//        for (int w = 0; w < 10; w++) {
+//            runLatencyRound(queue, warmupRounds);
+//        }
 
         System.out.println("Running latency test...");
         long[] latencies = runLatencyRound(queue, testRounds);
@@ -249,11 +249,18 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
                 // Pin to CPU core for better performance
                 Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
+                long next = System.nanoTime();
                 for (int i = 0; i < rounds; i++) {
                     long timestamp = System.nanoTime();
                     queue.put(timestamp);
-                    LockSupport.parkNanos(1000);
+
+                    // 1 µs pacing
+                    next += 1000; // nanoseconds
+                    while ((System.nanoTime()) < next) {
+                        Thread.onSpinWait(); // aktif bekleme
+                    }
                 }
+
             } finally {
                 latch.countDown();
             }
@@ -281,7 +288,8 @@ public class SPSCArrayQueue<E> implements BlockingRingBuffer<E>{
         return latencies;
     }
     public static void main(String[] args) throws InterruptedException {
-//        throughput();
-        latencyTest();
+        throughput();
+
+//        latencyTest();
     }
 }
